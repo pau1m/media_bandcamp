@@ -1,4 +1,5 @@
 <?php
+
 // $Id$ 
 
 /**
@@ -6,15 +7,25 @@
  */
 
 /**
- * Implementation of hook_install() 
+ * Implementation of hook_install()
+ * 
  */
 function media_bandcamp_install() {
 
 }
 
 /**
- * Implementation of hook_uninstall() 
+ * Implementation of hook_uninstall()
+ * Clean up variables table.
  */
 function media_bandcamp_uninstall() {
-
+    variable_del('emfield_bandcamp_override_default_dimensions');
+    variable_del('emaudio_bandcamp_track_preview_dimensions');
+    variable_del('emaudio_bandcamp_track_full_dimensions');
+    variable_del('emaudio_bandcamp_album_preview_dimensions');
+    variable_del('emaudio_bandcamp_album_full_dimensions');
+    variable_del('emaudio_bandcamp_visualization');
+    variable_del('emaudio_bandcamp_link_color');
+    variable_del('emaudio_bandcamp_background_color');
+    variable_del('emaudio_bandcamp_color_override');
 }
