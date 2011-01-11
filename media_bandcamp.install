@@ -19,7 +19,7 @@ function media_bandcamp_install() {
  * Clean up variables table.
  */
 function media_bandcamp_uninstall() {
-    variable_del('emfield_bandcamp_override_default_dimensions');
+    variable_del('emaudio_bandcamp_override_default_dimensions');
     variable_del('emaudio_bandcamp_track_preview_dimensions');
     variable_del('emaudio_bandcamp_track_full_dimensions');
     variable_del('emaudio_bandcamp_album_preview_dimensions');

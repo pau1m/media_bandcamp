@@ -6,10 +6,6 @@
  * @file
  *   This include processes bandcamp media files for use by emfield.module.
  */
-
-
-//@TODO place comments around tricky code
-
 /**
  *  Bandcamp URL
  */
@@ -56,7 +52,7 @@ define('EMAUDIO_BANDCAMP_VISUALIZATION_BUBBLES', 'bubbles');
 define('EMAUDIO_BANDCAMP_VISUALIZATION_ABSTRACT3D', 'abstract3d');
 define('EMAUDIO_BANDCAMP_VISUALIZATION_FLOWERS', 'flowers');
 define('EMAUDIO_BANDCAMP_VISUALIZATION_PLASMA', 'plasma');
-define('EMAUDIO_BANDCAMP_VISUALIZATION_EQUALIZER', 'equalizer');
+define('EMAUDIO_BANDCAMP_VISUALIZATION_EQUALIZER', 'equalizer3d');
 define('EMAUDIO_BANDCAMP_VISUALIZATION_HYPNO', 'hypno');
 define('EMAUDIO_BANDCAMP_VISUALIZATION_PLUGHOLE', 'plughole');
 define('EMAUDIO_BANDCAMP_VISUALIZATION_STRATA', 'strata');
@@ -158,9 +154,9 @@ function emaudio_bandcamp_settings() {
         '#collapsed' => TRUE,
     );
 
-    $form['bandcamp']['player']['dimensions']['emfield_bandcamp_override_default_dimensions'] = array(
+    $form['bandcamp']['player']['dimensions']['emaudio_bandcamp_override_default_dimensions'] = array(
         '#type' => 'checkbox',
-        '#title' => 'Override emfield default sizes',
+        '#title' => 'Override emaudio default sizes',
         '#description' => 'Use the sizes set here in place of emaudio defaults',
         '#default_value' => 1,
     );
@@ -243,7 +239,7 @@ function emaudio_bandcamp_settings() {
 
     $form['bandcamp']['player']['visualization']['emaudio_bandcamp_visualization'] = array(
         '#type' => 'radios',
-        '#title' => 'Album',
+        '#title' => 'Visualization',
         '#default_value' => variable_get('emaudio_bandcamp_visualization', EMAUDIO_BANDCAMP_VISUALIZATION_DEFAULT),
         '#options' => array(
             'none' => t('No visuals, just display the player'),
@@ -311,7 +307,6 @@ function EMMODULE_PROVIDER_validate($code, $error_field) {
     }
 }
 
-
 /*
  * Retrieve information and parse information from URL
  *
@@ -321,6 +316,7 @@ function EMMODULE_PROVIDER_validate($code, $error_field) {
  *   - code: the unique numerical ID of the track
  *   - preview_image: the URI of cover art
  */
+
 function emaudio_bandcamp_data($field, $item) {
 
     $data = array('emaudio_bandcamp_version' => EMAUDIO_BANDCAMP_DATA_VERSION);
@@ -333,12 +329,11 @@ function emaudio_bandcamp_data($field, $item) {
 
         $data['type'] = $matches[1]; // 'album' or 'track'
         $data['code'] = $matches[2]; // the numerical identifier for the album or track
-        
         //extract preview image URL for potential use by themers
         preg_match('@http://[^"\&]+\.jpg@i', $response->data, &$matches);
         $data['preview_image'] = $matches[0];
     }
-    
+
     return $data;
 }
 
@@ -349,7 +344,6 @@ function emaudio_bandcamp_data_version($field, $item) {
 /**
  * The embedded flash displaying the SoundCloud audio.
  */
-//function theme_emaudio_bandcamp_flash($item, $embed, $width, $height, $autoplay) {
 function theme_emaudio_bandcamp_flash($item) {
 
     $type = $item['data']['type'];
@@ -396,6 +390,7 @@ function emaudio_bandcamp_embedded_link($code, $data = array()) {
 /*
  * This displays the actual content
  */
+
 function emaudio_bandcamp_audio($embed, $width, $height, $field, $item, $node, $autoplay) {
 
     $item['options'] = emaudio_bandcamp_set_options($item, $width, $height, 'full');
@@ -415,16 +410,15 @@ function emaudio_bandcamp_emfield_subtheme() {
     );
 }
 
-
 /*
  * Implementation of emfield_hook_preview
  */
+
 function emaudio_bandcamp_preview($embed, $width, $height, $field, $item, $node, $autoplay) {
     $item['options'] = emaudio_bandcamp_set_options($item, $width, $height, 'preview');
 
     return theme('emaudio_bandcamp_flash', $item);
 }
-
 
 /**
  *  Build a list of provider files that serve the invoking module.
@@ -503,7 +497,7 @@ function emaudio_bandcamp_set_options($item, $width, $height, $display_type = 'f
     $type = $item['data']['type'];
     $size = variable_get('emaudio_bandcamp_' . $type . '_' . $display_type . '_dimensions', EMAUDIO_BANDCAMP_SIZE_DEFAULT);
 
-    if (variable_get('emfield_bandcamp_override_default_dimensions', 0)) {
+    if (variable_get('emaudio_bandcamp_override_default_dimensions', 0)) {
 
         switch ($size) {
 
