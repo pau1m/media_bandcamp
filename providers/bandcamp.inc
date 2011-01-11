@@ -1,18 +1,14 @@
 <?php
 
-// $Id: emfield.php,v 1.1.2.3 2009/10/29 18:29:43 aaron Exp $
+// $Id$
 
 /**
  * @file
  *   This include processes bandcamp media files for use by emfield.module.
  */
-//should probably use an options field for user set options
-//have one entire funcion which assigns all the variable gets to an options
-//field. Could take away and replace $autoplay -> don't see how it could be needed here
+
+
 //@TODO place comments around tricky code
-//@TODO aa thumbnail view
-// @TODO check the dev version of emfield. Seem to be several differences
-// in the hooks implemented by other providers compared to those in hooks.php
 
 /**
  *  Bandcamp URL
@@ -20,13 +16,13 @@
 define('EMAUDIO_BANDCAMP_MAIN_URL', 'http://www.bandcamp.com');
 
 /**
- *  Define player bandcamp color, type, dimensions and default
+ *  Define player bandcamp color, size, dimensions and default
  */
 //color
 define('EMAUDIO_BANDCAMP_BACKGROUND_COLOR_DEFAULT', 'FFFFFF');
 define('EMAUDIO_BANDCAMP_LINK_COLOR_DEFAULT', '4285BB');
 
-//type and dimensions
+//size and dimensions
 define('EMAUDIO_BANDCAMP_SIZE_VENTI', 'venti');
 define('EMAUDIO_BANDCAMP_SIZE_VENTI_WIDTH', '400');
 define('EMAUDIO_BANDCAMP_SIZE_VENTI_HEIGHT', '100');
@@ -116,12 +112,7 @@ function emaudio_bandcamp_info() {
 }
 
 /**
- *  Allow a provider to add its own elements to the content creation form.
- *
- * !!!!!!! have changed name of this function from
- * !!!!!!! emaudio_bandcamp_form($items, $field) because it didn't seem to be working
- * !!!!!!! come back and look at this
- *
+ *  Menu settings
  *
  */
 function emaudio_bandcamp_settings() {
@@ -260,7 +251,7 @@ function emaudio_bandcamp_settings() {
             'abstract3d' => t('Abstract 3D'),
             'flowers' => t('Flowers'),
             'plasma' => t('Plasma'),
-            'equalizer' => t('Equalizer'),
+            'equalizer3d' => t('Equalizer'),
             'hypno' => t('Hypno'),
             'plughole' => t('Plughole'),
             'strata' => t('Strata'),
@@ -320,10 +311,18 @@ function EMMODULE_PROVIDER_validate($code, $error_field) {
     }
 }
 
+
+/*
+ * Retrieve information and parse information from URL
+ *
+ * @return $data
+ *   An associative array containing
+ *   - type: whether the content is an 'album' or 'track'
+ *   - code: the unique numerical ID of the track
+ *   - preview_image: the URI of cover art
+ */
 function emaudio_bandcamp_data($field, $item) {
-    //@TODO capture the thumbnail as well so as it can be used in theming
-    //@TODO add ability to handle embedded item as well
-    //is this line necessary
+
     $data = array('emaudio_bandcamp_version' => EMAUDIO_BANDCAMP_DATA_VERSION);
 
     $response = drupal_http_request($item['embed']);
@@ -334,13 +333,12 @@ function emaudio_bandcamp_data($field, $item) {
 
         $data['type'] = $matches[1]; // 'album' or 'track'
         $data['code'] = $matches[2]; // the numerical identifier for the album or track
-        //extract preview image URL
+        
+        //extract preview image URL for potential use by themers
         preg_match('@http://[^"\&]+\.jpg@i', $response->data, &$matches);
-        $data['preview image'] = $matches[0];
+        $data['preview_image'] = $matches[0];
     }
-
-
-
+    
     return $data;
 }
 
@@ -361,22 +359,22 @@ function theme_emaudio_bandcamp_flash($item) {
     $size = $item['options']['size'];
     $bg_color = $item['options']['bg_color'];
     $link_color = $item['options']['link_color'];
+    $visualization = $item['options']['visualization'];
+
 
     //don't forget to add a bit about visualization
 
     $output = <<<BC
-<object
-data="http://bandcamp.com/EmbeddedPlayer/{$type}={$code}/size={$size}/bgcol={$bg_color}/linkcol={$link_color}//"
+<object data="http://bandcamp.com/EmbeddedPlayer/{$type}={$code}/size={$size}/bgcol={$bg_color}/linkcol={$link_color}/vis={$visualization}//"
 type="text/html" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="{$width}" height="{$height}">
-<param name="movie" value="http://bandcamp.com/EmbeddedPlayer/{$type}={$code}/size={$size}/bgcol={$bg_color}/linkcol={$link_color}//">
+<param name="movie" value="http://bandcamp.com/EmbeddedPlayer/{$type}={$code}/size={$size}/bgcol={$bg_color}/linkcol={$link_color}/vis={$visualization}//">
 <param name="quality" value="high">
 <param name="allowNetworking" value="always">
 <param name="wmode" value="transparent">
 <param name="bgcolor" value="#{$bg_color}">
 <param name="allowScriptAccess" value="never">
-<object data="http://bandcamp.com/EmbeddedPlayer/{$type}={$code}/size={$size}/bgcol={$bg_color}/linkcol={$link_color}//" type="text/html" width="{$width}" height="{$height}">
-</object>
-</object>
+<object data="http://bandcamp.com/EmbeddedPlayer/{$type}={$code}/size={$size}/bgcol={$bg_color}/linkcol={$link_color}/vis={$visualization}//" type="text/html" width="{$width}" height="{$height}">
+</object></object>
 BC;
 
     return $output;
@@ -395,18 +393,11 @@ function emaudio_bandcamp_embedded_link($code, $data = array()) {
     return $data['embed']; //have another look at this
 }
 
-/**
- *  @TODO
- *  Not sure why this is there -- provided for already w/ hook_emfield_subtheme.
+/*
+ * This displays the actual content
  */
-function EMMODULE_PROVIDER_subtheme() {
-
-}
-
-// @TODO this hook is missing from the hooks.php but is used by other providers
 function emaudio_bandcamp_audio($embed, $width, $height, $field, $item, $node, $autoplay) {
-dsm($field);
-dsm($node);
+
     $item['options'] = emaudio_bandcamp_set_options($item, $width, $height, 'full');
 
     return theme('emaudio_bandcamp_flash', $item);
@@ -420,51 +411,20 @@ function emaudio_bandcamp_emfield_subtheme() {
         'emaudio_bandcamp_flash' => array(
             'arguments' => array('embed' => NULL, 'width' => NULL, 'height' => NULL, 'autoplay' => NULL, 'options' => array()),
             'file' => 'providers/bandcamp.inc',
-        //  'path' => drupal_get_path('module', 'media_example'),
-        // don't think we really need this bit but come back and try with and without
         ),
     );
 }
 
+
+/*
+ * Implementation of emfield_hook_preview
+ */
 function emaudio_bandcamp_preview($embed, $width, $height, $field, $item, $node, $autoplay) {
     $item['options'] = emaudio_bandcamp_set_options($item, $width, $height, 'preview');
 
     return theme('emaudio_bandcamp_flash', $item);
 }
 
-// instead of using a separate inc for the theme we'll put in a theme function call here
-
-/**
- *  @TODO
- *  Not sure why this is there -- provided for already w/ hook_emfield_submenu.
- */
-function EMMODULE_PROVIDER_submenu() {
-
-}
-
-/**
- *  Returns any menu pages required by this provider.
- */
-function EMMODULE_PROVIDER_emfield_submenu() {
-
-}
-
-/**
- *  Generate random media for the devel module.
- *
- *  If the devel module (at http://drupal.org/project/devel) is installed,
- *  it can be used to generate placeholder content, useful for development.
- *
- *  This function should return an array of URLs to parse. One will be selected
- *  randomly from the array.
- */
-function EMMODULE_PROVIDER_content_generate() {
-    return array(
-        'http://www.example.com/video/drupal-song',
-        'http://www.example.com/video/about-emfield',
-        'http://www.example.com/video/love-drupal',
-    );
-}
 
 /**
  *  Build a list of provider files that serve the invoking module.
@@ -518,12 +478,7 @@ function hook_emfield_widget_extra($form, $form_state, $field, $items, $delta, $
  *  Alter the data array of a media item before it is stored in the database.
  */
 function hook_emfield_data_alter(&$data, $module, $delta = 0, $node = NULL, $field = NULL, $items = array()) {
-//    dsm($data);
-//    dsm($module);
-//    dsm($delta);
-//    dsm($node);
-//    dsm($field);
-//    dsm($items);
+
 }
 
 /*
@@ -594,6 +549,6 @@ function emaudio_bandcamp_set_options($item, $width, $height, $display_type = 'f
     $options['height'] = $height;
     $options['bg_color'] = variable_get('emaudio_bandcamp_background_color', EMAUDIO_BANDCAMP_BACKGROUND_COLOR_DEFAULT);
     $options['link_color'] = variable_get('emaudio_bandcamp_link_color', EMAUDIO_BANDCAMP_LINK_COLOR_DEFAULT);
-
+    $options['visualization'] = variable_get('emaudio_bandcamp_visualization', EMAUDIO_BANDCAMP_VISUALIZATION_DEFAULT);
     return $options;
 }
