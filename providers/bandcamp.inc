@@ -275,6 +275,21 @@ function emaudio_bandcamp_settings() {
  */
 function emaudio_bandcamp_extract($embed, $field) {
 
+    //match embed code
+    //<object data="http://bandcamp.com/EmbeddedPlayer/album=1420100316/size=venti/bgcol=FFFFFF/linkcol=4285BB//" 
+    //type="text/html" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" 
+    //width="400" height="100">
+    //<param name="movie" value="http://bandcamp.com/EmbeddedPlayer/album=1420100316/size=venti/bgcol=FFFFFF/linkcol=4285BB//">
+    //<param name="quality" value="high"><param name="allowNetworking" value="always">
+    //<param name="wmode" value="transparent"><param name="bgcolor" value="#FFFFFF">
+    //<param name="allowScriptAccess" value="never">
+    //<object data="http://bandcamp.com/EmbeddedPlayer/album=1420100316/size=venti/bgcol=FFFFFF/linkcol=4285BB//" type="text/html" width="400" height="100"></object></object>
+    
+    $regex = '@http://bandcamp\.com/EmbeddedPlayer/(album|track)=([\d]+)@i';
+    preg_match($regex, $embed, &$matches);
+    dsm($matches);
+
+
 
     return array(
         // matching urls
@@ -282,6 +297,9 @@ function emaudio_bandcamp_extract($embed, $field) {
         // http://laurashigihara.bandcamp.com/track/crazy-daves-greeting
         // http://laurashigihara.bandcamp.com/album/plants-vs-zombies-soundtrack
         '@((?:\w+)\.bandcamp\.com/(album|track)?/(?:[^"\&]+))@i',
+
+        '@http://bandcamp\.com/EmbeddedPlayer/(album|track)=([\d]+)@i',
+       
     //@TODO match embed code
     );
 }
@@ -318,23 +336,41 @@ function EMMODULE_PROVIDER_validate($code, $error_field) {
  */
 
 function emaudio_bandcamp_data($field, $item) {
+    //dsm($field);
+    //$data = array('emaudio_bandcamp_version' => EMAUDIO_BANDCAMP_DATA_VERSION);
+    $data = array();
 
-    $data = array('emaudio_bandcamp_version' => EMAUDIO_BANDCAMP_DATA_VERSION);
+    //regex for embed code
+    $embed_regex = '@http://bandcamp\.com/EmbeddedPlayer/(album|track)=([\d]+)@i';
+    //regex for link
+    $link_regex = '@((?:\w+)\.bandcamp\.com/(album|track)?/(?:[^"\&]+))@i';
 
-    $response = drupal_http_request($item['embed']);
-    if ($response->code == 200) {
-
-        //extract 'album' or 'track' and unique numerical identifier
-        preg_match('@(?:video_src.+)(album|track)=([\d]+)@i', $response->data, &$matches);
-
-        $data['type'] = $matches[1]; // 'album' or 'track'
-        $data['code'] = $matches[2]; // the numerical identifier for the album or track
-        //extract preview image URL for potential use by themers
-        preg_match('@http://[^"\&]+\.jpg@i', $response->data, &$matches);
-        $data['preview_image'] = $matches[0];
+    //if we have an embed code, just return the values for type and code
+    if (preg_match($embed_regex, $item['embed'], &$matches)){
+        $data['type'] = $matches[1];
+        $data['code'] = $matches[2];
+        return $data;
     }
 
-    return $data;
+    //if we have a link
+    if (preg_match($link_regex, $item['embed'])) {
+        
+        //request the page at the given url
+        $response = drupal_http_request($item['embed']);
+        if ($response->code == 200) {
+
+            //extract 'album' or 'track' and unique numerical identifier
+            preg_match('@(?:video_src.+)(album|track)=([\d]+)@i', $response->data, &$matches);
+
+            $data['type'] = $matches[1]; // 'album' or 'track'
+            $data['code'] = $matches[2]; // the numerical identifier for the album or track
+            //extract preview image URL for potential use by themers
+            preg_match('@http://[^"\&]+\.jpg@i', $response->data, &$matches);
+            $data['preview_image'] = $matches[0];
+
+            return $data;
+        }
+    }
 }
 
 function emaudio_bandcamp_data_version($field, $item) {
@@ -384,7 +420,7 @@ BC;
  *    A string containing the URL to view the original media.
  */
 function emaudio_bandcamp_embedded_link($code, $data = array()) {
-    return $data['embed']; //have another look at this
+    return $code;
 }
 
 /*
