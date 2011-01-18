@@ -100,7 +100,7 @@ function emaudio_bandcamp_info() {
     );
     return array(
         'provider' => 'bandcamp',
-        'name' => t('bandcamp'),
+        'name' => t('Bandcamp'),
         'url' => EMAUDIO_BANDCAMP_MAIN_URL,
         'settings_description' => t('These settings specifically affect videos displayed from !bandcamp.', array('!bandcamp' => l(t('Bandcamp.com'), EMAUDIO_BANDCAMP_MAIN_URL))),
         'supported_features' => $features,
@@ -275,32 +275,23 @@ function emaudio_bandcamp_settings() {
  */
 function emaudio_bandcamp_extract($embed, $field) {
 
-    //match embed code
-    //<object data="http://bandcamp.com/EmbeddedPlayer/album=1420100316/size=venti/bgcol=FFFFFF/linkcol=4285BB//" 
-    //type="text/html" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" 
-    //width="400" height="100">
-    //<param name="movie" value="http://bandcamp.com/EmbeddedPlayer/album=1420100316/size=venti/bgcol=FFFFFF/linkcol=4285BB//">
-    //<param name="quality" value="high"><param name="allowNetworking" value="always">
-    //<param name="wmode" value="transparent"><param name="bgcolor" value="#FFFFFF">
-    //<param name="allowScriptAccess" value="never">
-    //<object data="http://bandcamp.com/EmbeddedPlayer/album=1420100316/size=venti/bgcol=FFFFFF/linkcol=4285BB//" type="text/html" width="400" height="100"></object></object>
-    
-    $regex = '@http://bandcamp\.com/EmbeddedPlayer/(album|track)=([\d]+)@i';
-    preg_match($regex, $embed, &$matches);
-    dsm($matches);
-
-
-
     return array(
         // matching urls
         // http://laurashigihara.bandcamp.com
         // http://laurashigihara.bandcamp.com/track/crazy-daves-greeting
         // http://laurashigihara.bandcamp.com/album/plants-vs-zombies-soundtrack
         '@((?:\w+)\.bandcamp\.com/(album|track)?/(?:[^"\&]+))@i',
+        //match embed code
+        //<object data="http://bandcamp.com/EmbeddedPlayer/album=1420100316/size=venti/bgcol=FFFFFF/linkcol=4285BB//"
+        //type="text/html" classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
+        //width="400" height="100">
+        //<param name="movie" value="http://bandcamp.com/EmbeddedPlayer/album=1420100316/size=venti/bgcol=FFFFFF/linkcol=4285BB//">
+        //<param name="quality" value="high"><param name="allowNetworking" value="always">
+        //<param name="wmode" value="transparent"><param name="bgcolor" value="#FFFFFF">
+        //<param name="allowScriptAccess" value="never">
+        //<object data="http://bandcamp.com/EmbeddedPlayer/album=1420100316/size=venti/bgcol=FFFFFF/linkcol=4285BB//" type="text/html" width="400" height="100"></object></object>
 
-        '@http://bandcamp\.com/EmbeddedPlayer/(album|track)=([\d]+)@i',
-       
-    //@TODO match embed code
+        '@http://bandcamp\.com/EmbeddedPlayer/((album|track)=([\d]+))@i',
     );
 }
 
@@ -319,6 +310,9 @@ function emaudio_bandcamp_extract($embed, $field) {
  *  @param $error_field
  *    The form field to use with form_set_error().
  */
+
+
+//todo check and validate color input
 function EMMODULE_PROVIDER_validate($code, $error_field) {
     if (!_example_call_api('video_data', $code)) {
         form_set_error($error_field, t('That video no longer exists on example.com.'));
@@ -347,8 +341,10 @@ function emaudio_bandcamp_data($field, $item) {
 
     //if we have an embed code, just return the values for type and code
     if (preg_match($embed_regex, $item['embed'], &$matches)){
-        $data['type'] = $matches[1];
-        $data['code'] = $matches[2];
+        $data['type'] = $matches[1]; //matched (album|track)
+        $data['code'] = $matches[2]; //matched code
+
+
         return $data;
     }
 
@@ -472,44 +468,6 @@ function hook_emfield_providers($module, $provider = NULL) {
     return drupal_system_listing("$provider\.inc$", drupal_get_path('module', 'media_example') . "/providers/$module", 'name', 0);
 }
 
-/**
- *  Generally used for metadata, this will add an array of database column
- *  information to be saved when present in the field. Note that this hook
- *  is used to return columns to be saved for all Embedded Media Fields,
- *  and is currently unused by the core Embedded Media Field modules.
- */
-function hook_emfield_field_columns_extra($field) {
-    return array(
-        'author' => array(
-            'description' => 'The original author of the third party media.',
-            'type' => 'varchar',
-            'length' => 255,
-            'not null' => TRUE,
-            'default' => '',
-        ),
-    );
-}
-
-/**
- *  This passes on the original implementation of CCK's hook_widget_settings.
- */
-function hook_emfield_widget_settings_extra($op, $widget) {
-
-}
-
-/**
- *  This passes on the original implementation of CCK's hook_widget.
- */
-function hook_emfield_widget_extra($form, $form_state, $field, $items, $delta, $module) {
-
-}
-
-/**
- *  Alter the data array of a media item before it is stored in the database.
- */
-function hook_emfield_data_alter(&$data, $module, $delta = 0, $node = NULL, $field = NULL, $items = array()) {
-
-}
 
 /*
  * @param $item
